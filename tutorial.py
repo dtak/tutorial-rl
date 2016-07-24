@@ -5,6 +5,8 @@ import gridworld
 # -------------------- #
 #   Create the Task    #
 # -------------------- #
+action_list = [ 'north' , 'south' , 'east' , 'west' ] 
+
 trivial_maze = [   
     '###', # '#' = wall
     '#o#', # 'o' = origin grid cell
@@ -72,7 +74,7 @@ def update_SARSA( Q_table , alpha , gamma , state , action , reward , new_state 
 # Parameters 
 alpha = .1
 epsilon = .1 
-gamma = .1 
+gamma = .99
 state_count = task.num_states  
 action_count = task.num_actions 
 episode_count = 100
@@ -114,24 +116,41 @@ for rep_iter in range( rep_count ):
                 state = new_state
                 action = new_action 
 
-# ------------------ #
-#   Plotting Utils   #
-# ------------------ #
-def plot_with_errbars(N, data):
-    x = np.arange(N)
-    mean = data.mean(axis=0)
-    std = data.std(axis=0)
-    plt.fill_between(x, mean-2*std, mean+2*std, color='#d0d0d0')
-    plt.plot(x, mean)
+# -------------- #
+#   Make Plots   #
+# -------------- #
+def plot_value_and_q_function( Q_table , maze ):
+    action_count = Q_table.shape[1]
+    row_count = len( maze )
+    col_count = len( maze[0] )
+    Q_max = np.max( Q_table )
+    Q_min = np.min( Q_table ) 
+    for action_iter in range( action_count ): 
+        plt.subplot( 1 , action_count + 1 , action_iter + 1 )
+        plt.imshow( np.reshape( Q_table[:, action_iter] , ( row_count , col_count ) ) , interpolation='none' , vmin=Q_min , vmax=Q_max )
+        plt.title( 'Q-value of ' + action_list[ action_iter ] ) 
+        
+    plt.subplot( 1 , action_count + 1 , action_count + 1 )
+    plt.imshow( np.reshape( np.max( Q_table , 1 ) , ( row_count , col_count ) ) , interpolation='none' , vmin=Q_min , vmax=Q_max )
+    plt.title( 'Value Function' )
+    plt.colorbar() 
+    plt.show() 
 
+# Plot the rewards     
 plt.figure(1) 
 plt.plot( episode_reward_set.T )
+plt.title( 'Rewards per Episode (each line is a rep)' ) 
+plt.xlabel( 'Episode Number' )
+plt.ylabel( 'Sum of Rewards in Episode' )
 plt.show( block=False )
 
-# HH finale! make a function to plot the Q for each square 
-plt.matshow( Q_table ) 
-plt.show()
+# Plot the Value functions 
+plt.figure(2) 
+plot_value_and_q_function( Q_table , maze )
 
+# If you want to interact with it further... 
+import pdb 
+pdb.set_trace()
     
 
 
