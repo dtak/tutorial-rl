@@ -1,12 +1,14 @@
+# general imports 
 import matplotlib.pyplot as plt
+import matplotlib 
 import numpy as np
+
+# created by us 
 import gridworld 
 
 # -------------------- #
 #   Create the Task    #
 # -------------------- #
-action_list = [ 'north' , 'south' , 'east' , 'west' ] 
-
 trivial_maze = [   
     '###', # '#' = wall
     '#o#', # 'o' = origin grid cell
@@ -72,8 +74,8 @@ def update_SARSA( Q_table , alpha , gamma , state , action , reward , new_state 
 # action error prob vs epsilon 
 
 # Parameters 
-alpha = .1
-epsilon = .1 
+alpha = .5
+epsilon = .1
 gamma = .99
 state_count = task.num_states  
 action_count = task.num_actions 
@@ -119,25 +121,56 @@ for rep_iter in range( rep_count ):
 # -------------- #
 #   Make Plots   #
 # -------------- #
-def plot_value_and_q_function( Q_table , maze ):
-    action_count = Q_table.shape[1]
+# Util to make an arrow 
+# The directions are [ 'north' , 'south' , 'east' , 'west' ] 
+def plot_arrow( location , direction , plot ):
+
+    arrow = plt.arrow( location[0] , location[1] , dx , dy , fc="k", ec="k", head_width=0.05, head_length=0.1 )
+    plot.add_patch(arrow) 
+
+# Util to plot the value and the policy     
+def plot_value_and_policy( Q_table , maze ):
     row_count = len( maze )
-    col_count = len( maze[0] )
-    Q_max = np.max( Q_table )
-    Q_min = np.min( Q_table ) 
-    for action_iter in range( action_count ): 
-        plt.subplot( 1 , action_count + 1 , action_iter + 1 )
-        plt.imshow( np.reshape( Q_table[:, action_iter] , ( row_count , col_count ) ) , interpolation='none' , vmin=Q_min , vmax=Q_max )
-        plt.title( 'Q-value of ' + action_list[ action_iter ] ) 
-        
-    plt.subplot( 1 , action_count + 1 , action_count + 1 )
-    plt.imshow( np.reshape( np.max( Q_table , 1 ) , ( row_count , col_count ) ) , interpolation='none' , vmin=Q_min , vmax=Q_max )
+    col_count = len( maze[0] ) 
+    value_function = np.reshape( np.max( Q_table , 1 ) , ( row_count , col_count ) )
+    policy_function = np.reshape( np.argmax( Q_table , 1 ) , ( row_count , col_count ) )
+
+    # wall info 
+    wall_info = .5 + np.zeros( ( row_count , col_count ) )
+    wall_mask = np.zeros( ( row_count , col_count ) )
+    for row in range( row_count ):
+        for col in range( col_count ):
+            if maze[row][col] == '#':
+                wall_mask[row,col] = 1     
+    wall_info = np.ma.masked_where( wall_mask==0 , wall_info )
+
+    # value function plot 
+    plt.figure() 
+    plt.imshow( value_function , interpolation='none' , cmap=matplotlib.cm.jet )
+    plt.colorbar()
+    plt.imshow( wall_info , interpolation='none' , cmap=matplotlib.cm.gray )
     plt.title( 'Value Function' )
-    plt.colorbar() 
-    plt.show() 
+
+    # policy plot 
+    plt.figure()
+    plt.imshow( 1 - wall_mask , interpolation='none' , cmap=matplotlib.cm.gray )    
+    for row in range( row_count ):
+        for col in range( col_count ):
+            if wall_mask[row][col] == 1:
+                continue 
+            if policy_function[row,col] == 0:
+                dx = 0; dy = -.5
+            if policy_function[row,col] == 1:
+                dx = 0; dy = .5
+            if policy_function[row,col] == 2:
+                dx = .5; dy = 0
+            if policy_function[row,col] == 3:
+                dx = -.5; dy = 0
+            plt.arrow( col , row , dx , dy , shape='full', lw=3, length_includes_head=True, head_width=.2 )
+    plt.title( 'Policy' )        
+    plt.show( block=False ) 
 
 # Plot the rewards     
-plt.figure(1) 
 plt.plot( episode_reward_set.T )
 plt.title( 'Rewards per Episode (each line is a rep)' ) 
 plt.xlabel( 'Episode Number' )
@@ -145,8 +178,7 @@ plt.ylabel( 'Sum of Rewards in Episode' )
 plt.show( block=False )
 
 # Plot the Value functions 
-plt.figure(2) 
-plot_value_and_q_function( Q_table , maze )
+plot_value_and_policy( Q_table , maze )
 
 # If you want to interact with it further... 
 import pdb 
