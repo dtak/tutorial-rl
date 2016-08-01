@@ -28,7 +28,22 @@ long_maze = [
     '#.#', # '.' = empty grid cell
     '#*#', # '*' = goal
     '###']
-            
+
+simple_grid = [   
+    '#######', 
+    '#o....#', 
+    '#..X..#', 
+    '#....*#', 
+    '#######']    
+
+cliff_grid = [
+    '#######', 
+    '#.....#', 
+    '#.##..#', 
+    '#o...*#',
+    '#XXXXX#', 
+    '#######']    
+                
 simple_maze = [
     '#########',
     '#..#....#',
@@ -40,11 +55,13 @@ simple_maze = [
     '#o......#',
     '#########']
 
-maze = long_maze 
+maze = cliff_grid
 
 task = gridworld.GridWorld( maze ,
                             action_error_prob=.1, 
-                            rewards={'*': 50, 'moved': -1, 'hit-wall': -1 } )
+                            rewards={'*': 50, 'moved': -1, 'hit-wall': -1,'X':-100} )
+
+task.get_max_reward() 
 
 # ----------------- #
 #   Key Functions   # 
@@ -143,22 +160,21 @@ for row in range( row_count ):
 wall_info = np.ma.masked_where( wall_mask==0 , wall_info )
 
 # Plot the rewards
-plt.subplot( 1 , 3 , 1 ) 
+plt.subplot( 1 , 2 , 1 ) 
 plt.plot( episode_reward_set.T )
 plt.title( 'Rewards per Episode (each line is a rep)' ) 
 plt.xlabel( 'Episode Number' )
 plt.ylabel( 'Sum of Rewards in Episode' )
 
 # value function plot 
-plt.subplot( 1 , 3 , 2 ) 
+plt.subplot( 1 , 2 , 2 ) 
 plt.imshow( value_function , interpolation='none' , cmap=matplotlib.cm.jet )
 plt.colorbar()
 plt.imshow( wall_info , interpolation='none' , cmap=matplotlib.cm.gray )
 plt.title( 'Value Function' )
 
 # policy plot 
-plt.subplot( 1 , 3 , 3 ) 
-plt.imshow( 1 - wall_mask , interpolation='none' , cmap=matplotlib.cm.gray )    
+# plt.imshow( 1 - wall_mask , interpolation='none' , cmap=matplotlib.cm.gray )    
 for row in range( row_count ):
     for col in range( col_count ):
         if wall_mask[row][col] == 1:
@@ -171,7 +187,7 @@ for row in range( row_count ):
             dx = .5; dy = 0
         if policy_function[row,col] == 3:
             dx = -.5; dy = 0
-        plt.arrow( col , row , dx , dy , shape='full', lw=3, length_includes_head=True, head_width=.2 )
+        plt.arrow( col , row , dx , dy , shape='full', fc='w' , ec='w' , lw=3, length_includes_head=True, head_width=.2 )
 plt.title( 'Policy' )        
 plt.show( block=False ) 
 
