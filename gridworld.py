@@ -155,7 +155,19 @@ class GridWorld(object):
             return self.observe(), 0
 
         if self.action_error_prob and np.random.rand() < self.action_error_prob:
-            action_idx = np.random.choice(self.num_actions)
+            # finale! this would be just pick any direction; we
+            # changed it to be slip 90-degrees in some direction
+            # action_idx = np.random.choice(self.num_actions)
+            if np.random.rand() < .5:
+                if action_idx == 0 or action_idx == 1:
+                    action_idx = 2
+                else: 
+                    action_idx = 0
+            else: 
+                if action_idx == 0 or action_idx == 1:
+                    action_idx = 3
+                else: 
+                    action_idx = 1
             
         action = self.actions[action_idx]
         new_state_tuple, result = move_avoiding_walls(self.maze, self.maze.unflatten_index(self.state), action)

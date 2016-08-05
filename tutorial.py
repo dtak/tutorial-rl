@@ -6,17 +6,54 @@ import numpy as np
 # created by us 
 import gridworld 
 
+# ----------------------------------------------------------------------- #
+#   This is a very simple script to play with RL params in a gridworld    #
+# ----------------------------------------------------------------------- #
+#
+# The first thing you need to do is to understand the code below and
+# fill in the update_Q() function fill in the code so it can do either
+# SARSA or Q-Learning (and later, you can explore Monte Carlo/etc).
+# There's a section with task parameters and a section with 
+#
+# Next, there are several different domains below.  Here are some
+# things to explore to get you started, and then you can create your
+# own experiments!  (Feel free to skip around.) 
+#
+# Exploration #1: Try the short_hallway and the long_hallway - is
+# there a difference in how long it takes to learn each?  What happens
+# as you adjust the discount factor? 
+#
+# Exploration #2: Try the test_maze.  What happens as you adjust the
+# discount factor?  What about the learning rate?  Does it help to
+# adjust the learning rate with time?  The epsilon with time?  Explore
+# both using Q-learning and SARSA.  
+#
+# Exploration #3: Try the simple_grid with different pit_rewards and
+# action_error_prob: how does the policy change?  
+#
+# Exploration #4: Try the cliff_grid with a large pit_reward and
+# different values of action_error_prob and epsilon (constant and
+# decreasing).  How does the policy change?  Does it matter whether
+# you use Q-learning or SARSA?
+#
+# Exploration #5: Adjust the code in gridworld.py to stop a fixed
+# number of iterations rather than when the goal is reached.  Set the
+# number of iterations to be large.  Does this change affect how
+# quickly the policy converges?  How quickly the value function
+# converges?  Explain what you see.  
+
 # -------------------- #
-#   Create the Task    #
+#   Different Tasks    #
 # -------------------- #
-trivial_maze = [   
+# You can also create your own! 
+short_hallway = [   
     '###', # '#' = wall
     '#o#', # 'o' = origin grid cell
     '#.#', # '.' = empty grid cell
     '#*#', # '*' = goal
     '###']
 
-long_maze = [   
+long_hallway = [   
     '###', # '#' = wall
     '#o#', # 'o' = origin grid cell
     '#.#', # '.' = empty grid cell
@@ -28,6 +65,17 @@ long_maze = [
     '#.#', # '.' = empty grid cell
     '#*#', # '*' = goal
     '###']
+
+test_maze = [
+    '#########',
+    '#..#....#',
+    '#..#..#.#',
+    '#..#..#.#',
+    '#..#.##.#',
+    '#....*#.#',
+    '#######.#',
+    '#o......#',
+    '#########']
 
 simple_grid = [   
     '#######', 
@@ -43,25 +91,6 @@ cliff_grid = [
     '#o...*#',
     '#XXXXX#', 
     '#######']    
-                
-simple_maze = [
-    '#########',
-    '#..#....#',
-    '#..#..#.#',
-    '#..#..#.#',
-    '#..#.##.#',
-    '#....*#.#',
-    '#######.#',
-    '#o......#',
-    '#########']
-
-maze = cliff_grid
-
-task = gridworld.GridWorld( maze ,
-                            action_error_prob=.1, 
-                            rewards={'*': 50, 'moved': -1, 'hit-wall': -1,'X':-100} )
-
-task.get_max_reward() 
 
 # ----------------- #
 #   Key Functions   # 
@@ -75,29 +104,32 @@ def policy( state , Q_table , action_count , epsilon ):
     return action 
 
 # Update the Q table 
-def update_SARSA( Q_table , alpha , gamma , state , action , reward , new_state , new_action ):
-    old_Q = Q_table[ state , action ]
-    next_Q = Q_table[ new_state , new_action ]
-    new_Q = old_Q + alpha * ( reward + gamma * next_Q - old_Q )
-    Q_table[ state , action ] = new_Q 
+def update_Q( Q_table , alpha , gamma , state , action , reward , new_state , new_action ):
+    # Fill in this function
     return Q_table 
     
-# Things to play with
-# - changing the discount_factor
-# - changing the initialization of the Q function (optimistic/shaping) 
-# - changing the alpha
-# - changing the epsilon in the epsilon greedy 
-# - on vs. off policy 
-# action error prob vs epsilon 
-# should the episode end when goal is reached? 
+# -------------------- #
+#   Create the Task    #
+# -------------------- #
+# Task Parameters
+task_name = short_hallway 
+action_error_prob = .1 
+pit_reward = -500
+task = gridworld.GridWorld( task_name ,
+                            action_error_prob=action_error_prob, 
+                            rewards={'*': 50, 'moved': -1, 'hit-wall': -1,'X':pit_reward} )
+task.get_max_reward() 
 
-# Parameters 
+# ---------------- #
+#   Run the Task   # 
+# ---------------- #
+# Algorithm Parameters 
 alpha = .5
 epsilon = .1
-gamma = .99
+gamma = .99 
 state_count = task.num_states  
 action_count = task.num_actions 
-episode_count = 100
+episode_count = 250
 rep_count = 10
 
 # Loop over some number of episodes
@@ -114,16 +146,18 @@ for rep_iter in range( rep_count ):
         task.reset()
         state = task.observe() 
         action = policy( state , Q_table , action_count , epsilon ) 
-        episode_reward_list = [] 
+        episode_reward_list = []
+        task_iter = 0 
 
         # Loop until done -- check when do we get the final state reward? 
-        while True: 
+        while True:
+            task_iter = task_iter + 1 
             new_state, reward = task.perform_action( action )
             new_action = policy( new_state , Q_table , action_count , epsilon ) 
             
             # update the Q_table
-            Q_table = update_SARSA( Q_table , alpha , gamma , 
-                                    state , action , reward , new_state , new_action ) 
+            Q_table = update_Q( Q_table , alpha , gamma , 
+                                state , action , reward , new_state , new_action ) 
 
             # store the data
             episode_reward_list.append( reward ) 
@@ -147,15 +181,15 @@ def plot_arrow( location , direction , plot ):
     plot.add_patch(arrow) 
 
 # Useful stats for the plot
-row_count = len( maze )
-col_count = len( maze[0] ) 
+row_count = len( task_name )
+col_count = len( task_name[0] ) 
 value_function = np.reshape( np.max( Q_table , 1 ) , ( row_count , col_count ) )
 policy_function = np.reshape( np.argmax( Q_table , 1 ) , ( row_count , col_count ) )
 wall_info = .5 + np.zeros( ( row_count , col_count ) )
 wall_mask = np.zeros( ( row_count , col_count ) )
 for row in range( row_count ):
     for col in range( col_count ):
-        if maze[row][col] == '#':
+        if task_name[row][col] == '#':
             wall_mask[row,col] = 1     
 wall_info = np.ma.masked_where( wall_mask==0 , wall_info )
 
