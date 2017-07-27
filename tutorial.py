@@ -114,7 +114,7 @@ def update_Q( Q_table , alpha , gamma , state , action , reward , new_state , ne
 # Task Parameters
 task_name = short_hallway 
 action_error_prob = .1 
-pit_reward = -500
+pit_reward = -50
 task = gridworld.GridWorld( task_name ,
                             action_error_prob=action_error_prob, 
                             rewards={'*': 50, 'moved': -1, 'hit-wall': -1,'X':pit_reward} )
